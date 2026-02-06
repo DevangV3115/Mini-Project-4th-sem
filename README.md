@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🧠 Self-Correcting Reasoning Engine
 
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -101,3 +102,7 @@ This project was developed as part of academic coursework to explore advanced re
 
 ---
 
+=======
+# CRUDAPP12
+# CRUDAPP12
+>>>>>>> e857156 (first commit)

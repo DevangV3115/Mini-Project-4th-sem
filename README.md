@@ -105,4 +105,8 @@ This project was developed as part of academic coursework to explore advanced re
 =======
 # CRUDAPP12
 # CRUDAPP12
+<<<<<<< HEAD
 >>>>>>> e857156 (first commit)
+=======
+# CRUDAPP12
+>>>>>>> a4716c5 (first commit)

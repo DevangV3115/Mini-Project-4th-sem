@@ -18,19 +18,11 @@ function getApp() {
 export let auth: Auth;
 export let db: Firestore;
 
-if (typeof window !== "undefined") {
+try {
   const app = getApp();
   auth = getAuth(app);
   db = getFirestore(app);
-} else {
-  // SSR / build: create lazily to avoid invalid-api-key during prerender
-  try {
-    const app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-  } catch {
-    // Will be initialized on the client
-    auth = {} as Auth;
-    db = {} as Firestore;
-  }
+} catch {
+  auth = {} as Auth;
+  db = {} as Firestore;
 }

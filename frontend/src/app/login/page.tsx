@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,13 +12,43 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const { signIn, signInWithGoogle, signInWithGithub } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsSubmitting(true);
-    setTimeout(() => router.push("/home"), 1500);
+    try {
+      await signIn(email, password);
+      router.push("/home");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGithub = async () => {
+    try {
+      await signInWithGithub();
+      router.push("/home");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "GitHub sign in failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+    }
+  };
+
+  const handleGoogle = async () => {
+    try {
+      await signInWithGoogle();
+      router.push("/home");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Google sign in failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+    }
   };
 
   return (
@@ -33,9 +64,16 @@ export default function LoginPage() {
       </div>
 
       {/* Social login buttons */}
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm auth-field-enter">
+          {error}
+        </div>
+      )}
+
       <div className="space-y-3 mb-6 auth-social-enter">
         <button
           type="button"
+          onClick={handleGithub}
           className="auth-social-btn w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-medium hover:bg-white/[0.08] hover:border-white/[0.15] hover:text-white transition-all duration-300 group"
         >
           <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
@@ -45,6 +83,7 @@ export default function LoginPage() {
         </button>
         <button
           type="button"
+          onClick={handleGoogle}
           className="auth-social-btn w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-medium hover:bg-white/[0.08] hover:border-white/[0.15] hover:text-white transition-all duration-300 group"
         >
           <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24">

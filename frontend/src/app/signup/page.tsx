@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -14,7 +15,9 @@ export default function SignupPage() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
+  const { signUp, signInWithGoogle, signInWithGithub } = useAuth();
 
   const passwordStrength = (() => {
     if (!password) return 0;
@@ -29,10 +32,42 @@ export default function SignupPage() {
   const strengthLabel = ["", "Weak", "Fair", "Good", "Strong"][passwordStrength];
   const strengthColor = ["", "bg-red-500", "bg-amber-500", "bg-sky-500", "bg-emerald-500"][passwordStrength];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    setError("");
     setIsSubmitting(true);
-    setTimeout(() => router.push("/home"), 1500);
+    try {
+      await signUp(email, password, name);
+      router.push("/home");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sign up failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGithub = async () => {
+    try {
+      await signInWithGithub();
+      router.push("/home");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "GitHub sign up failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+    }
+  };
+
+  const handleGoogle = async () => {
+    try {
+      await signInWithGoogle();
+      router.push("/home");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Google sign up failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+    }
   };
 
   return (
@@ -48,9 +83,16 @@ export default function SignupPage() {
       </div>
 
       {/* Social signup */}
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm auth-field-enter">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 mb-6 auth-social-enter">
         <button
           type="button"
+          onClick={handleGithub}
           className="auth-social-btn flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-medium hover:bg-white/[0.08] hover:border-white/[0.15] hover:text-white transition-all duration-300 group"
         >
           <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
@@ -60,6 +102,7 @@ export default function SignupPage() {
         </button>
         <button
           type="button"
+          onClick={handleGoogle}
           className="auth-social-btn flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-gray-300 text-sm font-medium hover:bg-white/[0.08] hover:border-white/[0.15] hover:text-white transition-all duration-300 group"
         >
           <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" viewBox="0 0 24 24">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { createChat, updateChat, type ChatMessage } from "@/lib/chatStore";
 
 /* ══════════════════════════ types ══════════════════════════ */
 interface ReasoningStep {
@@ -71,6 +73,9 @@ export default function HomePage() {
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [totalSteps, setTotalSteps] = useState(7);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
@@ -121,7 +126,28 @@ export default function HomePage() {
     });
   };
 
-  /* ────────── simulate reasoning + response ────────── */
+  /* ────── save chat to Firestore ────── */
+  const saveChat = async (msgs: Message[]) => {
+    if (!user) return;
+    const data: ChatMessage[] = msgs.map((m) => ({
+      role: m.role,
+      content: m.content,
+      ...(m.reasoning ? { reasoning: m.reasoning } : {}),
+    }));
+    try {
+      if (chatId) {
+        await updateChat(chatId, data);
+      } else {
+        const title = msgs.find((m) => m.role === "user")?.content.slice(0, 60) || "New chat";
+        const id = await createChat(user.uid, title, data);
+        setChatId(id);
+      }
+    } catch {
+      // Firestore save is best-effort; don't block the UI
+    }
+  };
+
+  /* ────────── reasoning + response (real API with demo fallback) ────────── */
   const handleSubmit = async (text?: string) => {
     const query = text || input.trim();
     if (!query || isGenerating) return;
@@ -139,27 +165,94 @@ export default function HomePage() {
     setActiveReasoning([]);
     setExpandedSteps(new Set());
 
-    for (let i = 0; i < DEMO_STEPS.length; i++) {
-      await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-      setActiveReasoning((prev) => [
-        ...prev.map((s) => ({ ...s, status: "done" as const })),
-        { ...DEMO_STEPS[i], id: i, status: "running" as const },
-      ]);
+    try {
+      const response = await fetch("/api/solve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: query }),
+      });
+
+      if (!response.ok || !response.body) throw new Error("API unavailable");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const steps: ReasoningStep[] = [];
+      let finalAnswer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          const dataLine = part.split("\n").find((l) => l.startsWith("data: "));
+          if (!dataLine) continue;
+
+          const event = JSON.parse(dataLine.slice(6));
+
+          if (event.type === "total_steps") {
+            setTotalSteps(event.data);
+          } else if (event.type === "step") {
+            const step: ReasoningStep = {
+              id: event.data.id,
+              label: event.data.label,
+              content: event.data.content,
+              status: event.data.status,
+            };
+            steps.push(step);
+            setActiveReasoning([...steps]);
+          } else if (event.type === "answer") {
+            finalAnswer = event.data.content;
+          }
+        }
+      }
+
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: finalAnswer || "Processing complete.",
+        reasoning: steps,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => {
+        const updated = [...prev, assistantMsg];
+        saveChat(updated);
+        return updated;
+      });
+    } catch {
+      // Fallback to demo mode if backend is unavailable
+      setTotalSteps(DEMO_STEPS.length);
+      for (let i = 0; i < DEMO_STEPS.length; i++) {
+        await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
+        setActiveReasoning((prev) => [
+          ...prev.map((s) => ({ ...s, status: "done" as const })),
+          { ...DEMO_STEPS[i], id: i, status: "running" as const },
+        ]);
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+      const finalSteps = DEMO_STEPS.map((s, i) => ({ ...s, id: i }));
+      setActiveReasoning(finalSteps);
+
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: DEMO_ANSWERS.default,
+        reasoning: finalSteps,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => {
+        const updated = [...prev, assistantMsg];
+        saveChat(updated);
+        return updated;
+      });
+    } finally {
+      setIsGenerating(false);
     }
-
-    await new Promise((r) => setTimeout(r, 500));
-    const finalSteps = DEMO_STEPS.map((s, i) => ({ ...s, id: i }));
-    setActiveReasoning(finalSteps);
-
-    const assistantMsg: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: DEMO_ANSWERS.default,
-      reasoning: finalSteps,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
-    setIsGenerating(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -391,7 +484,7 @@ export default function HomePage() {
                   </div>
                   {msg.role === "user" && (
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1 dash-avatar-glow">
-                      U
+                      {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
                     </div>
                   )}
                 </div>
@@ -417,7 +510,7 @@ export default function HomePage() {
                     </p>
                     {/* Mini progress */}
                     <div className="mt-2 h-0.5 rounded-full bg-white/[0.04] overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-amber-500 to-sky-500 dash-progress-sweep" style={{ width: `${(activeReasoning.length / DEMO_STEPS.length) * 100}%` }} />
+                      <div className="h-full bg-gradient-to-r from-amber-500 to-sky-500 dash-progress-sweep" style={{ width: `${(activeReasoning.length / totalSteps) * 100}%` }} />
                     </div>
                   </div>
                 </div>
@@ -552,14 +645,14 @@ export default function HomePage() {
                   <div className="flex items-center justify-between text-[10px] mb-1.5">
                     <span className="text-gray-500 uppercase tracking-wider font-semibold">Progress</span>
                     <span className="text-sky-400 font-mono">
-                      {activeReasoning.filter((s) => s.status !== "pending").length}/{DEMO_STEPS.length}
+                      {activeReasoning.filter((s) => s.status !== "pending").length}/{totalSteps}
                     </span>
                   </div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-amber-500 via-sky-500 to-purple-500 transition-all duration-700 ease-out dash-shimmer-bar"
                       style={{
-                        width: `${(activeReasoning.filter((s) => s.status !== "pending").length / DEMO_STEPS.length) * 100}%`,
+                        width: `${(activeReasoning.filter((s) => s.status !== "pending").length / totalSteps) * 100}%`,
                       }}
                     />
                   </div>
@@ -630,7 +723,7 @@ export default function HomePage() {
                 ))}
 
                 {/* Confidence */}
-                {!isGenerating && activeReasoning.length === DEMO_STEPS.length && (
+                {!isGenerating && activeReasoning.length >= totalSteps && (
                   <div className="mt-4 p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/15 dash-confidence-enter dash-glow-border-emerald">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Confidence Score</span>

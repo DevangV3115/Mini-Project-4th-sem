@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
   {
@@ -90,6 +91,8 @@ const RECENT_CHATS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -205,17 +208,32 @@ export default function Sidebar() {
       </nav>
 
       {/* User section */}
-      <div className="px-2 py-3 border-t border-white/[0.06]">
-        <button className="dash-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/[0.05] transition-all duration-300 group">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-sky-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 group-hover:shadow-lg group-hover:shadow-sky-500/20 transition-shadow duration-300">
-            U
+      <div className="px-2 py-3 border-t border-white/[0.06] space-y-1">
+        <div className="dash-nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-sky-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
           </div>
+          <span
+            className={`whitespace-nowrap truncate transition-all duration-300 ${
+              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+            }`}
+          >
+            {user?.displayName || user?.email || "User"}
+          </span>
+        </div>
+        <button
+          onClick={async () => { await signOut(); router.replace("/login"); }}
+          className="dash-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/[0.05] transition-all duration-300 group"
+        >
+          <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
           <span
             className={`whitespace-nowrap transition-all duration-300 ${
               collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
             }`}
           >
-            User
+            Sign out
           </span>
         </button>
       </div>

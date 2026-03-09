@@ -3,20 +3,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const { resetPassword } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await resetPassword(email);
       setSent(true);
-    }, 1500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Reset failed";
+      setError(msg.replace("Firebase: ", "").replace(/\(auth\/.*\)/, "").trim());
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -48,6 +57,12 @@ export default function ForgotPasswordPage() {
               send you a link to reset your password.
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm auth-field-enter">
+              {error}
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

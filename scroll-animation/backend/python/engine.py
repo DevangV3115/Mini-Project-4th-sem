@@ -1,12 +1,14 @@
-import ollama
+import os
 import random
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
 from collections import Counter
+from openai import OpenAI
 
-MODEL = "mistral"
+MODEL = "meta-llama/llama-3.3-70b-instruct"
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ.get("OPENROUTER_API_KEY"),
+)
 
 
 class Logger:
@@ -27,72 +29,32 @@ class Logger:
 
 def ask_llm(prompt):
     try:
-        response = ollama.chat(
+        response = client.chat.completions.create(
             model=MODEL,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=1024,
         )
-        return response["message"]["content"]
+        return response.choices[0].message.content
     except Exception as e:
         Logger.error(e)
         return "MODEL_ERROR"
 
 
-class NeuralReasoner(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(10, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-
 class NeuralReasoningEngine:
+    """Lightweight numeric estimator (no PyTorch needed)."""
+
     def __init__(self):
-        self.model = NeuralReasoner()
-        self.trained = False
-        self.train_model()
-
-    def vectorize(self, question):
-        vec = [0] * 10
-        digits = [int(c) for c in question if c.isdigit()]
-        for i in range(min(len(digits), 10)):
-            vec[i] = digits[i]
-        return np.array(vec, dtype=np.float32)
-
-    def train_model(self):
-        Logger.section("Training Neural Network")
-        X, Y = [], []
-        for _ in range(500):
-            a = random.randint(1, 50)
-            b = random.randint(1, 50)
-            vec = self.vectorize(f"{a} * {b}")
-            X.append(vec)
-            Y.append([a * b])
-        X = torch.tensor(X)
-        Y = torch.tensor(Y, dtype=torch.float32)
-        optimizer = optim.Adam(self.model.parameters(), lr=0.01)
-        loss_fn = nn.MSELoss()
-        for _ in range(200):
-            pred = self.model(X)
-            loss = loss_fn(pred, Y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        Logger.info("Neural model training complete")
         self.trained = True
+        Logger.info("Neural estimator ready")
 
     def predict(self, question):
-        vec = self.vectorize(question)
-        x = torch.tensor(vec).unsqueeze(0)
-        with torch.no_grad():
-            y = self.model(x)
-        return float(y.item())
+        digits = [int(c) for c in question if c.isdigit()]
+        if len(digits) >= 2:
+            return float(digits[0] * digits[1])
+        elif len(digits) == 1:
+            return float(digits[0])
+        return 0.0
 
 
 class PromptBuilder:

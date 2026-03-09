@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import { getAuth, initializeRecaptchaConfig, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -18,16 +18,14 @@ function getApp() {
 export let auth: Auth;
 export let db: Firestore;
 
-if (typeof window !== "undefined") {
+try {
   const app = getApp();
   auth = getAuth(app);
   db = getFirestore(app);
-} else {
-  try {
-    const app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-  } catch {
+  if (typeof window !== "undefined") {
+    initializeRecaptchaConfig(auth).catch(() => {});
+  }
+} catch {
     auth = {} as Auth;
     db = {} as Firestore;
   }

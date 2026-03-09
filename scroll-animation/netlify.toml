@@ -1,0 +1,16 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "frontend/.next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyBqR8r490XmiK5ePvmwnIxer1m7CnoASy8"
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "mini-project-15f7f.firebaseapp.com"
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID = "mini-project-15f7f"
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "mini-project-15f7f.firebasestorage.app"
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "112713181112"
+  NEXT_PUBLIC_FIREBASE_APP_ID = "1:112713181112:web:fca578249455cecb5c114d"
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = "G-4EZEHV89EJ"

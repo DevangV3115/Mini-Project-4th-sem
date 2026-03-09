@@ -6,9 +6,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions]
-  external_node_modules = ["openai"]
-
 [build.environment]
   NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyBqR8r490XmiK5ePvmwnIxer1m7CnoASy8"
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "mini-project-15f7f.firebaseapp.com"

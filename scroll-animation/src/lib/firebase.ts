@@ -1,5 +1,13 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, initializeRecaptchaConfig, type Auth } from "firebase/auth";
+import {
+  initializeAuth,
+  getAuth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  browserSessionPersistence,
+  indexedDBLocalPersistence,
+  type Auth,
+} from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,13 +28,20 @@ export let db: Firestore;
 
 try {
   const app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
   if (typeof window !== "undefined") {
-    initializeRecaptchaConfig(auth).catch(() => {});
+    if (getApps().length === 1) {
+      auth = initializeAuth(app, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+        popupRedirectResolver: browserPopupRedirectResolver,
+      });
+    } else {
+      auth = getAuth(app);
+    }
+  } else {
+    auth = getAuth(app);
   }
+  db = getFirestore(app);
 } catch {
-    auth = {} as Auth;
-    db = {} as Firestore;
-  }
+  auth = {} as Auth;
+  db = {} as Firestore;
 }

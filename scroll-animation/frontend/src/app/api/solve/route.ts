@@ -1,18 +1,22 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
 
+export const dynamic = "force-dynamic";
+
 const MODEL = "meta-llama/llama-3.3-70b-instruct";
 const ITERATIONS = 2;
 const COT_SAMPLES = 3;
 const TOTAL_STEPS = 1 + COT_SAMPLES + 1 + ITERATIONS * 2 + 1; // neural + CoT + consistency + (critique+refine)*iter + synthesis
 
-const client = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+function getClient() {
+  return new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
+}
 
 async function askLLM(prompt: string): Promise<string> {
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: prompt }],
     temperature: 0.7,

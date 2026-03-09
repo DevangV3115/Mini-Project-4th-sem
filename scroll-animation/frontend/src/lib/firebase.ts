@@ -1,13 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import {
-  initializeAuth,
-  getAuth,
-  browserLocalPersistence,
-  browserPopupRedirectResolver,
-  browserSessionPersistence,
-  indexedDBLocalPersistence,
-  type Auth,
-} from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -28,18 +20,7 @@ export let db: Firestore;
 
 try {
   const app = getApp();
-  if (typeof window !== "undefined") {
-    if (getApps().length === 1) {
-      auth = initializeAuth(app, {
-        persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
-        popupRedirectResolver: browserPopupRedirectResolver,
-      });
-    } else {
-      auth = getAuth(app);
-    }
-  } else {
-    auth = getAuth(app);
-  }
+  auth = getAuth(app);
   db = getFirestore(app);
 } catch {
   auth = {} as Auth;

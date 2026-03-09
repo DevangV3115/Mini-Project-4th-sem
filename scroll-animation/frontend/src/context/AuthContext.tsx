@@ -39,22 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      if (!auth || typeof auth.onAuthStateChanged !== "function") {
-        if (!("app" in auth)) {
-          setLoading(false);
-          return;
-        }
-      }
-      const unsubscribe = onAuthStateChanged(auth, (u) => {
-        setUser(u);
-        setLoading(false);
-      });
-      return unsubscribe;
-    } catch (err) {
-      console.error("Auth init error:", err);
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
       setLoading(false);
-    }
+    });
+    return unsubscribe;
   }, []);
 
   const signIn = async (email: string, password: string) => {

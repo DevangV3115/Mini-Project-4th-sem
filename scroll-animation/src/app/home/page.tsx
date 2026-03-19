@@ -166,7 +166,9 @@ export default function HomePage() {
     setExpandedSteps(new Set());
 
     try {
-      const response = await fetch("/api/solve", {
+      const rawBackendUrl = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || process.env.PYTHON_BACKEND_URL || "https://check-to-work-bbzs.onrender.com";
+      const BACKEND_URL = rawBackendUrl.replace(/\/$/, "");
+      const response = await fetch(`${BACKEND_URL}/solve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: query }),

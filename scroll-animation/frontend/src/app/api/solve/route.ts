@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 const PYTHON_BACKEND_URL =
   process.env.PYTHON_BACKEND_URL || "http://localhost:8000";

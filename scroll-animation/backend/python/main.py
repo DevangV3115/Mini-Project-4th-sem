@@ -52,8 +52,17 @@ async def solve(request: Request):
             loop.call_soon_threadsafe(queue.put_nowait, event)
 
         async def run_engine():
-            await asyncio.to_thread(engine.solve, question, step_callback)
-            loop.call_soon_threadsafe(queue.put_nowait, None)
+            try:
+                await asyncio.to_thread(engine.solve, question, step_callback)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                loop.call_soon_threadsafe(
+                    queue.put_nowait, 
+                    {"type": "answer", "data": {"content": f"**Backend Crash:** {str(e)}"}}
+                )
+            finally:
+                loop.call_soon_threadsafe(queue.put_nowait, None)
 
         task = asyncio.create_task(run_engine())
 

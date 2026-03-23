@@ -1,0 +1,10 @@
+[build]
+  base = "scroll-animation/frontend"
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Note: Environment variables should be managed via Netlify dashboard.
+# Ensure Firebase and Python backend URLs are set in the UI to prevent leaking keys.

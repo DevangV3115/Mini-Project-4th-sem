@@ -45,6 +45,7 @@ async def solve(request: Request):
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
 
+# Auto comment added for function
         def step_callback(event):
             loop.call_soon_threadsafe(queue.put_nowait, event)
 

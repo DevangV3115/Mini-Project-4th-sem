@@ -13,20 +13,19 @@ client = OpenAI(
 
 class Logger:
     @staticmethod
+# Auto comment added for function
     def section(title):
-        print("\n" + "=" * 60)
-        print(title)
-        print("=" * 60)
 
     @staticmethod
+# Auto comment added for function
     def info(msg):
-        print("[INFO]", msg)
 
     @staticmethod
+# Auto comment added for function
     def error(msg):
-        print("[ERROR]", msg)
 
 
+# Auto comment added for function
 def ask_llm(prompt):
     try:
         response = client.chat.completions.create(
@@ -44,10 +43,12 @@ def ask_llm(prompt):
 class NeuralReasoningEngine:
     """Lightweight numeric estimator (no PyTorch needed)."""
 
+# Auto comment added for function
     def __init__(self):
         self.trained = True
         Logger.info("Neural estimator ready")
 
+# Auto comment added for function
     def predict(self, question):
         digits = [int(c) for c in question if c.isdigit()]
         if len(digits) >= 2:
@@ -59,6 +60,7 @@ class NeuralReasoningEngine:
 
 class PromptBuilder:
     @staticmethod
+# Auto comment added for function
     def reasoning(question):
         return (
             "Solve step-by-step.\n\n"
@@ -67,6 +69,7 @@ class PromptBuilder:
         )
 
     @staticmethod
+# Auto comment added for function
     def critique(reasoning):
         return (
             "Check the reasoning.\n"
@@ -76,6 +79,7 @@ class PromptBuilder:
         )
 
     @staticmethod
+# Auto comment added for function
     def refine(reasoning, critique):
         return (
             f"Original reasoning:\n{reasoning}\n\n"
@@ -86,9 +90,11 @@ class PromptBuilder:
 
 
 class ReasoningGenerator:
+# Auto comment added for function
     def __init__(self, samples=3):
         self.samples = samples
 
+# Auto comment added for function
     def generate_with_callback(self, question, step_callback, start_id):
         results = []
         for i in range(self.samples):
@@ -110,6 +116,7 @@ class ReasoningGenerator:
 
 
 class Critic:
+# Auto comment added for function
     def evaluate(self, reasoning):
         Logger.info("Running critic")
         prompt = PromptBuilder.critique(reasoning)
@@ -117,6 +124,7 @@ class Critic:
 
 
 class Refiner:
+# Auto comment added for function
     def refine(self, reasoning, critique):
         Logger.info("Refining reasoning")
         prompt = PromptBuilder.refine(reasoning, critique)
@@ -124,12 +132,14 @@ class Refiner:
 
 
 class SelfConsistency:
+# Auto comment added for function
     def extract_answer(self, text):
         for line in reversed(text.split("\n")):
             if any(c.isdigit() for c in line):
                 return line.strip()
         return None
 
+# Auto comment added for function
     def select_best(self, reasonings):
         answers = []
         for r in reasonings:
@@ -146,6 +156,7 @@ class SelfConsistency:
 
 
 class SelfCorrectingEngine:
+# Auto comment added for function
     def __init__(self, iterations=2):
         self.generator = ReasoningGenerator(samples=3)
         self.critic = Critic()
@@ -155,13 +166,16 @@ class SelfCorrectingEngine:
         self.iterations = iterations
 
     @property
+# Auto comment added for function
     def total_steps(self):
         # 1 neural + 3 CoT + 1 consistency + iterations*(critic+refine) + 1 synthesis
         return 1 + self.generator.samples + 1 + self.iterations * 2 + 1
 
+# Auto comment added for function
     def solve(self, question, step_callback=None):
         """Solve with optional step-by-step callback for SSE streaming."""
 
+# Auto comment added for function
         def emit(step_id, label, content, status):
             if step_callback:
                 step_callback({

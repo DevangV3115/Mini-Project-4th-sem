@@ -77,3 +77,10 @@ This project is an implementation experiment based on the paper:
 ---
 
 *Made for Mini-Project - 4th Semester.*
+
+## 🔮 Future Improvements
+
+- Improve reasoning accuracy with better models  
+- Add user authentication  
+- Enhance UI performance  
+- Expand analytics and visualization features  

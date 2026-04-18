@@ -95,3 +95,9 @@ This project is an implementation experiment based on the paper:
 
 ---
 
+## 🎯 Project Purpose
+
+This project was developed as part of academic coursework to explore advanced reasoning systems using modern web technologies and AI models.
+
+---
+

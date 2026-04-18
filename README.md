@@ -84,3 +84,14 @@ This project is an implementation experiment based on the paper:
 - Add user authentication  
 - Enhance UI performance  
 - Expand analytics and visualization features  
+
+---
+
+## 👨‍💻 Contributors
+
+- Devang Verma  
+- Devansh Kanodia
+- Vinamra Bhatnagar
+
+---
+

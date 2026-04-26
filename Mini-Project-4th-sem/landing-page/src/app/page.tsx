@@ -1,4 +1,6 @@
-﻿import ScrollAnimation from "@/components/ScrollAnimation";
+﻿"use client";
+import { useState } from "react";
+import ScrollAnimation from "@/components/ScrollAnimation";
 import Navbar from "@/components/Navbar";
 import AnimatedSection from "@/components/AnimatedSection";
 import AnimatedText from "@/components/AnimatedText";
@@ -133,6 +135,28 @@ const FAQS = [
 ];
 
 export default function Home() {
+const [username, setUsername] = useState("");
+const [password, setPassword] = useState("");
+
+const handleSignup = async () => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  alert(data.message);
+};
+
+const handleLogin = async () => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  alert(data.message);
+};
   return (
     <main className="bg-slate-950 text-white">
       <Navbar />
@@ -345,9 +369,31 @@ export default function Home() {
             Join thousands of researchers pushing the boundaries of autonomous reasoning. Get started for free.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <GlowButton className="px-8 py-3 text-white bg-gradient-to-r from-amber-500 to-sky-500 rounded-full font-semibold shadow-lg shadow-sky-500/20 text-base">
-              Sign Up Free
-            </GlowButton>
+          <div className="flex flex-col items-center gap-4">
+            <input
+              type="text"
+              placeholder="Username"
+              className="px-4 py-2 rounded bg-black border border-gray-600"
+              onChange={(e) => setUsername(e.target.value)}
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              className="px-4 py-2 rounded bg-black border border-gray-600"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <div className="flex gap-4">
+              <GlowButton onClick={handleSignup}>
+                Sign Up
+              </GlowButton>
+
+              <GlowButton onClick={handleLogin}>
+                Login
+              </GlowButton>
+           </div>
+         </div>            
             <button className="outline-btn px-8 py-3 text-gray-200 border border-white/20 rounded-full font-medium text-base">
               Contact Sales
             </button>

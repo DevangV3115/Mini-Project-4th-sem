@@ -1,6 +1,7 @@
 {
   "name": "mini-project-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend API for Mini Project - Self-Correcting Reasoning in LLMs",
   "main": "src/index.js",
   "scripts": {

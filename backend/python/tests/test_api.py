@@ -10,12 +10,12 @@ from unittest.mock import patch, MagicMock, AsyncMock, ANY
 from fastapi.testclient import TestClient
 import main
 
-
 # Create a mock engine that will be reused
 mock_engine = MagicMock()
 mock_engine.total_steps = 8
 mock_engine.total_paths = 0
 mock_engine.solve = MagicMock(return_value="Answer: 42")
+
 
 # Patch the engine in main module for all tests
 @pytest.fixture(scope="module", autouse=True)
@@ -71,12 +71,15 @@ class TestFeedbackEndpoint:
 
     def test_feedback_valid_request(self):
         """Valid feedback should return success."""
-        response = client.post("/feedback", json={
-            "chat_id": "chat_123",
-            "user_id": "user_456",
-            "rating": 5,
-            "comments": "Great reasoning!",
-        })
+        response = client.post(
+            "/feedback",
+            json={
+                "chat_id": "chat_123",
+                "user_id": "user_456",
+                "rating": 5,
+                "comments": "Great reasoning!",
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
@@ -84,50 +87,65 @@ class TestFeedbackEndpoint:
 
     def test_feedback_minimum_fields(self):
         """Feedback with only required fields should work."""
-        response = client.post("/feedback", json={
-            "chat_id": "chat_123",
-            "user_id": "user_456",
-            "rating": 3,
-            "comments": "",
-        })
+        response = client.post(
+            "/feedback",
+            json={
+                "chat_id": "chat_123",
+                "user_id": "user_456",
+                "rating": 3,
+                "comments": "",
+            },
+        )
         assert response.status_code == 200
 
     def test_feedback_invalid_rating_too_high(self):
         """Rating above 5 should be rejected."""
-        response = client.post("/feedback", json={
-            "chat_id": "chat_123",
-            "user_id": "user_456",
-            "rating": 10,
-            "comments": "",
-        })
+        response = client.post(
+            "/feedback",
+            json={
+                "chat_id": "chat_123",
+                "user_id": "user_456",
+                "rating": 10,
+                "comments": "",
+            },
+        )
         assert response.status_code == 422
 
     def test_feedback_invalid_rating_too_low(self):
         """Rating below 1 should be rejected."""
-        response = client.post("/feedback", json={
-            "chat_id": "chat_123",
-            "user_id": "user_456",
-            "rating": 0,
-            "comments": "",
-        })
+        response = client.post(
+            "/feedback",
+            json={
+                "chat_id": "chat_123",
+                "user_id": "user_456",
+                "rating": 0,
+                "comments": "",
+            },
+        )
         assert response.status_code == 422
 
     def test_feedback_missing_required_fields(self):
         """Missing required fields should return 422."""
-        response = client.post("/feedback", json={
-            "rating": 5,
-        })
+        response = client.post(
+            "/feedback",
+            json={
+                "rating": 5,
+            },
+        )
         assert response.status_code == 422
 
     def test_feedback_with_step_id(self):
         """Feedback targeting a specific step should work."""
-        response = client.post("/feedback", json={
-            "chat_id": "chat_123",
-            "user_id": "user_456",
-            "rating": 4,
-            "comments": "Step was unclear",
-            "step_id": 3,
-        })
+        response = client.post(
+            "/feedback",
+            json={
+                "chat_id": "chat_123",
+                "user_id": "user_456",
+                "rating": 4,
+                "comments": "Step was unclear",
+                "step_id": 3,
+            },
+        )
         assert response.status_code == 200
 
 

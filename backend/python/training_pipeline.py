@@ -147,7 +147,9 @@ def retrain_model():
         log_training_run(metrics)
 
         logger.info("=" * 60)
-        logger.info(f"Training cycle completed: {metrics['passed']}/{metrics['total']} tests passed")
+        logger.info(
+            f"Training cycle completed: {metrics['passed']}/{metrics['total']} tests passed"
+        )
         if metrics["errors"]:
             for err in metrics["errors"]:
                 logger.warning(f"  Issue: {err}")

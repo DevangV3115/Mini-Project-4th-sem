@@ -69,11 +69,7 @@ class PromptBuilder:
     @staticmethod
     def reasoning(question: str) -> str:
         """Build a zero-shot chain-of-thought prompt."""
-        return (
-            "Solve step-by-step.\n\n"
-            f"Question:\n{question}\n\n"
-            "Reasoning:"
-        )
+        return "Solve step-by-step.\n\n" f"Question:\n{question}\n\n" "Reasoning:"
 
     @staticmethod
     def critique(reasoning: str) -> str:
@@ -103,7 +99,9 @@ class ReasoningGenerator:
     def __init__(self, samples: int = 3):
         self.samples = samples
 
-    def generate_with_callback(self, question: str, step_callback, start_id: int) -> list[str]:
+    def generate_with_callback(
+        self, question: str, step_callback, start_id: int
+    ) -> list[str]:
         """Generate `samples` reasoning paths, emitting SSE events for each."""
         results = []
         for i in range(self.samples):
@@ -112,15 +110,17 @@ class ReasoningGenerator:
             reasoning = ask_llm(prompt)
             results.append(reasoning)
             summary = reasoning[:200] + "…" if len(reasoning) > 200 else reasoning
-            step_callback({
-                "type": "step",
-                "data": {
-                    "id": start_id + i,
-                    "label": f"Chain-of-Thought #{i + 1}",
-                    "content": f"Generating independent reasoning path #{i + 1}…\n{summary}",
-                    "status": "done",
-                },
-            })
+            step_callback(
+                {
+                    "type": "step",
+                    "data": {
+                        "id": start_id + i,
+                        "label": f"Chain-of-Thought #{i + 1}",
+                        "content": f"Generating independent reasoning path #{i + 1}…\n{summary}",
+                        "status": "done",
+                    },
+                }
+            )
         return results
 
 
@@ -214,15 +214,17 @@ class SelfCorrectingEngine:
 
         def emit(step_id: int, label: str, content: str, status: str):
             if step_callback:
-                step_callback({
-                    "type": "step",
-                    "data": {
-                        "id": step_id,
-                        "label": label,
-                        "content": content,
-                        "status": status,
-                    },
-                })
+                step_callback(
+                    {
+                        "type": "step",
+                        "data": {
+                            "id": step_id,
+                            "label": label,
+                            "content": content,
+                            "status": status,
+                        },
+                    }
+                )
 
         step_id = 0
 
@@ -230,7 +232,12 @@ class SelfCorrectingEngine:
         logger.info("── Step 1: Neural Prediction ──")
         nn_guess = self.neural.predict(question)
         logger.info(f"Neural estimate: {nn_guess}")
-        emit(step_id, "Neural Prediction", f"Neural network estimate: {nn_guess:.2f}", "done")
+        emit(
+            step_id,
+            "Neural Prediction",
+            f"Neural network estimate: {nn_guess:.2f}",
+            "done",
+        )
         step_id += 1
 
         # Step 2: Generate reasoning samples (with per-step callbacks)
@@ -244,7 +251,12 @@ class SelfCorrectingEngine:
         # Step 3: Consistency check
         logger.info("── Step 3: Consistency Voting ──")
         reasoning = self.voter.select_best(reasonings)
-        emit(step_id, "Consistency Check", "Comparing reasoning paths and selecting consensus answer…", "done")
+        emit(
+            step_id,
+            "Consistency Check",
+            "Comparing reasoning paths and selecting consensus answer…",
+            "done",
+        )
         step_id += 1
 
         # Step 4: Iterative critique + refinement
@@ -257,20 +269,32 @@ class SelfCorrectingEngine:
             step_id += 1
 
             reasoning = self.refiner.refine(reasoning, critique)
-            emit(step_id, f"Self-Correction #{i + 1}", "Revised reasoning based on identified issues", "corrected")
+            emit(
+                step_id,
+                f"Self-Correction #{i + 1}",
+                "Revised reasoning based on identified issues",
+                "corrected",
+            )
             step_id += 1
 
         # Step 5: Final synthesis
         logger.info("── Step 5: Final Synthesis ──")
-        emit(step_id, "Final Synthesis", "Merging corrected reasoning chains into verified answer", "done")
+        emit(
+            step_id,
+            "Final Synthesis",
+            "Merging corrected reasoning chains into verified answer",
+            "done",
+        )
 
         final_answer = reasoning + f"\n\n**Neural estimate:** {nn_guess:.2f}"
 
         if step_callback:
-            step_callback({
-                "type": "answer",
-                "data": {"content": final_answer, "neural_estimate": nn_guess},
-            })
+            step_callback(
+                {
+                    "type": "answer",
+                    "data": {"content": final_answer, "neural_estimate": nn_guess},
+                }
+            )
 
         logger.info("Reasoning pipeline completed successfully")
         return final_answer

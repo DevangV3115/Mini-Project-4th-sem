@@ -109,6 +109,7 @@ async def rate_limit_middleware(request: Request, call_next):
 # ── Request Models ─────────────────────────────────────────────────
 class SolveRequest(BaseModel):
     """Input validation for the /solve endpoint."""
+
     question: str = Field(
         ...,
         min_length=3,
@@ -120,11 +121,14 @@ class SolveRequest(BaseModel):
 
 class FeedbackRequest(BaseModel):
     """User feedback on reasoning quality."""
+
     chat_id: str = Field(..., description="The chat session ID")
     user_id: str = Field(..., description="The user's Firebase UID")
     rating: int = Field(..., ge=1, le=5, description="Rating from 1-5")
     comments: str = Field(default="", max_length=1000, description="Optional comments")
-    step_id: int | None = Field(default=None, description="Optional specific reasoning step ID")
+    step_id: int | None = Field(
+        default=None, description="Optional specific reasoning step ID"
+    )
 
 
 # ── Endpoints ──────────────────────────────────────────────────────
@@ -135,7 +139,9 @@ async def health():
         "status": "ok",
         "engine_ready": engine is not None,
         "total_requests": request_count,
-        "avg_latency_ms": round((total_latency / request_count) * 1000, 2) if request_count > 0 else 0,
+        "avg_latency_ms": (
+            round((total_latency / request_count) * 1000, 2) if request_count > 0 else 0
+        ),
     }
 
 
@@ -176,11 +182,15 @@ async def solve(body: SolveRequest):
                 await asyncio.to_thread(engine.solve, question, step_callback)
             except Exception as e:
                 import traceback
+
                 traceback.print_exc()
                 logger.error(f"Engine error: {e}")
                 loop.call_soon_threadsafe(
                     queue.put_nowait,
-                    {"type": "answer", "data": {"content": f"**Backend Error:** {str(e)}"}},
+                    {
+                        "type": "answer",
+                        "data": {"content": f"**Backend Error:** {str(e)}"},
+                    },
                 )
             finally:
                 loop.call_soon_threadsafe(queue.put_nowait, None)

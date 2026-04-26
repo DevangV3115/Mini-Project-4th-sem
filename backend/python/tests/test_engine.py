@@ -135,7 +135,9 @@ class TestReasoningGenerator:
         mock_llm.return_value = "Step 1: Think\nAnswer: 42"
         gen = ReasoningGenerator(samples=3)
         callbacks = []
-        results = gen.generate_with_callback("What is 6*7?", lambda e: callbacks.append(e), 0)
+        results = gen.generate_with_callback(
+            "What is 6*7?", lambda e: callbacks.append(e), 0
+        )
         assert len(results) == 3
         assert len(callbacks) == 3
         assert mock_llm.call_count == 3

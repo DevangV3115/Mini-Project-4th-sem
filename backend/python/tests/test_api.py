@@ -6,17 +6,29 @@ the httpx async test client.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, ANY
 from fastapi.testclient import TestClient
+import main
 
 
-# Mock the engine before importing the app
-with patch("main.SelfCorrectingEngine") as MockEngine:
-    mock_engine = MagicMock()
-    mock_engine.total_steps = 8
-    mock_engine.total_paths = 0
-    MockEngine.return_value = mock_engine
-    from main import app
+# Create a mock engine that will be reused
+mock_engine = MagicMock()
+mock_engine.total_steps = 8
+mock_engine.total_paths = 0
+mock_engine.solve = MagicMock(return_value="Answer: 42")
+
+# Patch the engine in main module for all tests
+@pytest.fixture(scope="module", autouse=True)
+def mock_engine_fixture():
+    """Patch SelfCorrectingEngine to use mock throughout all tests."""
+    with patch.object(main, "SelfCorrectingEngine", return_value=mock_engine):
+        # Also patch the engine variable in main module
+        with patch.object(main, "engine", mock_engine):
+            yield
+
+
+# Import app after patching
+from main import app
 
 client = TestClient(app)
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useLayoutEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -109,10 +109,11 @@ export default function Sidebar() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  useLayoutEffect(() => {
-    // Trigger re-render on mount to enable hydration-safe rendering
-    setMounted(true);
-  }, []);
+  import { useEffect } from "react";
+
+useEffect(() => {
+  setMounted(true);
+}, []);
 
   return (
     <aside

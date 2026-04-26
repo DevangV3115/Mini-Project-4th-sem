@@ -95,11 +95,8 @@ export default function Sidebar() {
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  
 
-  useEffect(() => {
-  setMounted(true);
-}, []);
 
   return (
     <aside
@@ -154,7 +151,7 @@ export default function Sidebar() {
                   : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
               }`}
               style={{
-                animationDelay: mounted ? `${i * 50}ms` : "0ms",
+                animationDelay: `${i * 50}ms`,
               }}
             >
               {/* Active indicator */}

@@ -1,28 +1,9 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  sendPasswordResetEmail,
-  GoogleAuthProvider,
-  GithubAuthProvider,
-  signInWithPopup,
-  updateProfile,
-  type User,
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { createContext, useContext, type ReactNode } from "react";
 
 interface AuthContextType {
-  user: User | null;
+  user: null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
@@ -35,47 +16,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+  // 👉 dummy functions (Firebase हटाने के लिए)
+  const signIn = async () => {
+    console.log("Login handled by backend");
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
+  const signUp = async () => {
+    console.log("Signup handled by backend");
   };
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    console.log("Logout");
   };
 
-  const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
-  };
-
-  const signInWithGoogle = async () => {
-    await signInWithPopup(auth, new GoogleAuthProvider());
-  };
-
-  const signInWithGithub = async () => {
-    await signInWithPopup(auth, new GithubAuthProvider());
-  };
+  const resetPassword = async () => {};
+  const signInWithGoogle = async () => {};
+  const signInWithGithub = async () => {};
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        loading,
+        user: null,
+        loading: false,
         signIn,
         signUp,
         signOut,

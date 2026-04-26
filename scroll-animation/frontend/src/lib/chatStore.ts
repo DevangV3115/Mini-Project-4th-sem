@@ -1,16 +1,4 @@
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  serverTimestamp,
-  type Timestamp,
-} from "firebase/firestore";
-import { db } from "./firebase";
+// ✅ Firebase removed – temporary in-memory store
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -28,36 +16,36 @@ export interface ChatSession {
   userId: string;
   title: string;
   messages: ChatMessage[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: number;
+  updatedAt: number;
 }
 
-const CHATS = "chats";
+let chats: ChatSession[] = [];
 
 export async function createChat(userId: string, title: string, messages: ChatMessage[]) {
-  const ref = await addDoc(collection(db, CHATS), {
+  const newChat: ChatSession = {
+    id: Date.now().toString(),
     userId,
     title,
     messages,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return ref.id;
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  chats.push(newChat);
+  return newChat.id;
 }
 
 export async function updateChat(chatId: string, messages: ChatMessage[]) {
-  await updateDoc(doc(db, CHATS, chatId), {
-    messages,
-    updatedAt: serverTimestamp(),
-  });
+  const chat = chats.find((c) => c.id === chatId);
+  if (chat) {
+    chat.messages = messages;
+    chat.updatedAt = Date.now();
+  }
 }
 
 export async function getUserChats(userId: string): Promise<ChatSession[]> {
-  const q = query(
-    collection(db, CHATS),
-    where("userId", "==", userId),
-    orderBy("updatedAt", "desc")
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as ChatSession));
+  return chats
+    .filter((c) => c.userId === userId)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 }

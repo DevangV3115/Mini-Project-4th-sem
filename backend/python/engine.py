@@ -1,8 +1,19 @@
+"""
+Self-Correcting Reasoning Engine
+
+Implements multi-path reasoning with consensus verification and iterative
+self-correction. The engine generates multiple independent chains of thought,
+compares them for consistency, and refines any divergent paths.
+
+Based on: "Learning Self-Correcting Reasoning Policies in LLMs Without Supervision"
+"""
+
 import os
-import random
+import logging
 from collections import Counter
 from openai import OpenAI
 
+# ── Configuration ──────────────────────────────────────────────────
 MODEL = "meta-llama/llama-3.3-70b-instruct"
 
 client = OpenAI(
@@ -10,23 +21,12 @@ client = OpenAI(
     api_key=os.environ.get("OPENROUTER_API_KEY"),
 )
 
-
-class Logger:
-    @staticmethod
-# Auto comment added for function
-    def section(title):
-
-    @staticmethod
-# Auto comment added for function
-    def info(msg):
-
-    @staticmethod
-# Auto comment added for function
-    def error(msg):
+logger = logging.getLogger("reasoning-engine")
 
 
-# Auto comment added for function
-def ask_llm(prompt):
+# ── LLM Interaction ───────────────────────────────────────────────
+def ask_llm(prompt: str) -> str:
+    """Send a prompt to the LLM and return the response text."""
     try:
         response = client.chat.completions.create(
             model=MODEL,
@@ -36,20 +36,24 @@ def ask_llm(prompt):
         )
         return response.choices[0].message.content
     except Exception as e:
-        Logger.error(e)
+        logger.error(f"LLM API error: {e}")
         return "MODEL_ERROR"
 
 
+# ── Neural Reasoning Estimator ─────────────────────────────────────
 class NeuralReasoningEngine:
-    """Lightweight numeric estimator (no PyTorch needed)."""
+    """Lightweight numeric estimator for quick baseline predictions.
 
-# Auto comment added for function
+    Extracts digits from the question and produces a fast numerical estimate
+    that serves as a sanity-check anchor for the LLM reasoning paths.
+    """
+
     def __init__(self):
         self.trained = True
-        Logger.info("Neural estimator ready")
+        logger.info("Neural estimator initialized and ready")
 
-# Auto comment added for function
-    def predict(self, question):
+    def predict(self, question: str) -> float:
+        """Extract digits from the question and produce a baseline estimate."""
         digits = [int(c) for c in question if c.isdigit()]
         if len(digits) >= 2:
             return float(digits[0] * digits[1])
@@ -58,10 +62,13 @@ class NeuralReasoningEngine:
         return 0.0
 
 
+# ── Prompt Templates ───────────────────────────────────────────────
 class PromptBuilder:
+    """Constructs structured prompts for each stage of the reasoning pipeline."""
+
     @staticmethod
-# Auto comment added for function
-    def reasoning(question):
+    def reasoning(question: str) -> str:
+        """Build a zero-shot chain-of-thought prompt."""
         return (
             "Solve step-by-step.\n\n"
             f"Question:\n{question}\n\n"
@@ -69,8 +76,8 @@ class PromptBuilder:
         )
 
     @staticmethod
-# Auto comment added for function
-    def critique(reasoning):
+    def critique(reasoning: str) -> str:
+        """Build a critique prompt that checks for errors in reasoning."""
         return (
             "Check the reasoning.\n"
             "Identify mistakes in logic or calculations.\n\n"
@@ -79,8 +86,8 @@ class PromptBuilder:
         )
 
     @staticmethod
-# Auto comment added for function
-    def refine(reasoning, critique):
+    def refine(reasoning: str, critique: str) -> str:
+        """Build a refinement prompt that corrects identified errors."""
         return (
             f"Original reasoning:\n{reasoning}\n\n"
             f"Critique:\n{critique}\n\n"
@@ -89,16 +96,18 @@ class PromptBuilder:
         )
 
 
+# ── Reasoning Path Generator ──────────────────────────────────────
 class ReasoningGenerator:
-# Auto comment added for function
-    def __init__(self, samples=3):
+    """Generates multiple independent reasoning paths for a given question."""
+
+    def __init__(self, samples: int = 3):
         self.samples = samples
 
-# Auto comment added for function
-    def generate_with_callback(self, question, step_callback, start_id):
+    def generate_with_callback(self, question: str, step_callback, start_id: int) -> list[str]:
+        """Generate `samples` reasoning paths, emitting SSE events for each."""
         results = []
         for i in range(self.samples):
-            Logger.info(f"Reasoning sample {i + 1}")
+            logger.info(f"Generating reasoning sample {i + 1}/{self.samples}")
             prompt = PromptBuilder.reasoning(question)
             reasoning = ask_llm(prompt)
             results.append(reasoning)
@@ -115,32 +124,41 @@ class ReasoningGenerator:
         return results
 
 
+# ── Critic ─────────────────────────────────────────────────────────
 class Critic:
-# Auto comment added for function
-    def evaluate(self, reasoning):
-        Logger.info("Running critic")
+    """Evaluates a reasoning path and identifies logical errors."""
+
+    def evaluate(self, reasoning: str) -> str:
+        """Submit reasoning to the LLM for critical evaluation."""
+        logger.info("Running critic on selected reasoning path")
         prompt = PromptBuilder.critique(reasoning)
         return ask_llm(prompt)
 
 
+# ── Refiner ────────────────────────────────────────────────────────
 class Refiner:
-# Auto comment added for function
-    def refine(self, reasoning, critique):
-        Logger.info("Refining reasoning")
+    """Refines reasoning based on critique feedback."""
+
+    def refine(self, reasoning: str, critique: str) -> str:
+        """Produce corrected reasoning incorporating critique feedback."""
+        logger.info("Refining reasoning based on critique")
         prompt = PromptBuilder.refine(reasoning, critique)
         return ask_llm(prompt)
 
 
+# ── Self-Consistency Voting ────────────────────────────────────────
 class SelfConsistency:
-# Auto comment added for function
-    def extract_answer(self, text):
+    """Implements majority-vote self-consistency across reasoning paths."""
+
+    def extract_answer(self, text: str) -> str | None:
+        """Extract the final answer line from a reasoning trace."""
         for line in reversed(text.split("\n")):
             if any(c.isdigit() for c in line):
                 return line.strip()
         return None
 
-# Auto comment added for function
-    def select_best(self, reasonings):
+    def select_best(self, reasonings: list[str]) -> str:
+        """Select the reasoning path whose answer agrees with the majority."""
         answers = []
         for r in reasonings:
             ans = self.extract_answer(r)
@@ -155,28 +173,46 @@ class SelfConsistency:
         return reasonings[0]
 
 
+# ── Main Engine ────────────────────────────────────────────────────
 class SelfCorrectingEngine:
-# Auto comment added for function
-    def __init__(self, iterations=2):
+    """Orchestrates the full self-correcting reasoning pipeline.
+
+    Pipeline:
+        1. Neural prediction (fast baseline estimate)
+        2. Multi-path reasoning generation (3 independent CoT paths)
+        3. Consistency voting (select consensus answer)
+        4. Iterative critique + refinement (N iterations)
+        5. Final synthesis
+    """
+
+    def __init__(self, iterations: int = 2):
         self.generator = ReasoningGenerator(samples=3)
         self.critic = Critic()
         self.refiner = Refiner()
         self.voter = SelfConsistency()
         self.neural = NeuralReasoningEngine()
         self.iterations = iterations
+        self.total_paths = 0
+        logger.info(f"SelfCorrectingEngine initialized (iterations={iterations})")
 
     @property
-# Auto comment added for function
-    def total_steps(self):
+    def total_steps(self) -> int:
+        """Total number of reasoning steps for progress tracking."""
         # 1 neural + 3 CoT + 1 consistency + iterations*(critic+refine) + 1 synthesis
         return 1 + self.generator.samples + 1 + self.iterations * 2 + 1
 
-# Auto comment added for function
-    def solve(self, question, step_callback=None):
-        """Solve with optional step-by-step callback for SSE streaming."""
+    def solve(self, question: str, step_callback=None) -> str:
+        """Run the full reasoning pipeline with optional SSE streaming.
 
-# Auto comment added for function
-        def emit(step_id, label, content, status):
+        Args:
+            question: The user's question to solve.
+            step_callback: Optional callback for streaming progress events.
+
+        Returns:
+            The final synthesized answer string.
+        """
+
+        def emit(step_id: int, label: str, content: str, status: str):
             if step_callback:
                 step_callback({
                     "type": "step",
@@ -190,26 +226,30 @@ class SelfCorrectingEngine:
 
         step_id = 0
 
-        # Neural prediction
-        Logger.section("Neural Prediction")
+        # Step 1: Neural prediction
+        logger.info("── Step 1: Neural Prediction ──")
         nn_guess = self.neural.predict(question)
-        Logger.info(f"Neural estimate: {nn_guess}")
+        logger.info(f"Neural estimate: {nn_guess}")
         emit(step_id, "Neural Prediction", f"Neural network estimate: {nn_guess:.2f}", "done")
         step_id += 1
 
-        # Generate reasoning samples (with per-step callbacks)
-        Logger.section("Generating Reasoning")
-        reasonings = self.generator.generate_with_callback(question, step_callback or (lambda _: None), step_id)
+        # Step 2: Generate reasoning samples (with per-step callbacks)
+        logger.info("── Step 2: Multi-Path Reasoning ──")
+        reasonings = self.generator.generate_with_callback(
+            question, step_callback or (lambda _: None), step_id
+        )
         step_id += self.generator.samples
+        self.total_paths += self.generator.samples
 
-        # Consistency check
+        # Step 3: Consistency check
+        logger.info("── Step 3: Consistency Voting ──")
         reasoning = self.voter.select_best(reasonings)
         emit(step_id, "Consistency Check", "Comparing reasoning paths and selecting consensus answer…", "done")
         step_id += 1
 
-        # Iterative critique + refinement
+        # Step 4: Iterative critique + refinement
         for i in range(self.iterations):
-            Logger.section(f"Iteration {i + 1}")
+            logger.info(f"── Iteration {i + 1}: Critique & Refinement ──")
 
             critique = self.critic.evaluate(reasoning)
             critique_summary = critique[:200] + "…" if len(critique) > 200 else critique
@@ -220,7 +260,8 @@ class SelfCorrectingEngine:
             emit(step_id, f"Self-Correction #{i + 1}", "Revised reasoning based on identified issues", "corrected")
             step_id += 1
 
-        # Final synthesis
+        # Step 5: Final synthesis
+        logger.info("── Step 5: Final Synthesis ──")
         emit(step_id, "Final Synthesis", "Merging corrected reasoning chains into verified answer", "done")
 
         final_answer = reasoning + f"\n\n**Neural estimate:** {nn_guess:.2f}"
@@ -231,4 +272,5 @@ class SelfCorrectingEngine:
                 "data": {"content": final_answer, "neural_estimate": nn_guess},
             })
 
+        logger.info("Reasoning pipeline completed successfully")
         return final_answer

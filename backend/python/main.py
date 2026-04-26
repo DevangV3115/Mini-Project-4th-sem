@@ -10,6 +10,21 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from engine import SelfCorrectingEngine
+import sqlite3
+
+# DB connect
+conn = sqlite3.connect("users.db", check_same_thread=False)
+cursor = conn.cursor()
+
+# table create
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE,
+    password TEXT
+)
+""")
+conn.commit()
 
 # ── Structured Logging ──────────────────────────────────────────────
 logging.basicConfig(
@@ -215,6 +230,48 @@ async def solve(body: SolveRequest):
         logger.info(f"Solve completed in {elapsed:.2f}s")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+from fastapi import HTTPException
+
+@app.post("/signup")
+async def signup(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Missing fields")
+
+    try:
+        cursor.execute(
+            "INSERT INTO users (email, password) VALUES (?, ?)",
+            (email, password)
+        )
+        conn.commit()
+        return {"message": "Signup success"}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+
+@app.post("/login")
+async def login(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Missing fields")
+
+    cursor.execute(
+        "SELECT * FROM users WHERE email=? AND password=?",
+        (email, password)
+    )
+    user = cursor.fetchone()
+
+    if user:
+        return {"message": "Login success"}
+
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 if __name__ == "__main__":

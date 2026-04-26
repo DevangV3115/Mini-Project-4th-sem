@@ -13,6 +13,7 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
@@ -53,6 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
   };
 
   const signOut = async () => {

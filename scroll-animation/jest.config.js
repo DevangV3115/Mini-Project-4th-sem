@@ -1,4 +1,6 @@
-const nextJest = require('next/jest')
+// Using require for Jest config as this is a CommonJS configuration file
+// and next/jest doesn't have a named export for default import
+const nextJest = require('next/jest') // eslint-disable-line @typescript-eslint/no-require-imports
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files in your test environment

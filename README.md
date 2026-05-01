@@ -170,9 +170,9 @@ Mini-Project-4th-sem/
 
 ## 👨‍💻 Contributors
 
-- **Devang Verma** — Architecture & Backend
-- **Devansh Kanodia** — Frontend & Auth
-- **Vinamra Bhatnagar** — Core Engine & UI
+- **Devang Verma** — Architecture
+- **Devansh Kanodia** — Backend & Auth
+- **Vinamra Bhatnagar** — Frontend & UI
 
 ---
 
